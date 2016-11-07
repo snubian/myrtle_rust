@@ -51,5 +51,5 @@ mcpPolygon <- function(d) {
     d[., ] %>%
     Polygon %>%
     list %>% Polygons(1) %>%
-    list %>% SpatialPolygons(proj4string = CRS("+proj=longlat +datum=WGS84"))
+    list %>% SpatialPolygons(proj4string = CRS(aea))
 }
