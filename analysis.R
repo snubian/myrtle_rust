@@ -17,24 +17,13 @@ data <- read.csv("data/occurrence/New_Myrt_Aust_Complete_270916.csv", stringsAsF
   setNames(c("id", "species", "latitude", "longitude")) %>%
   filter(!is.na(longitude) & !is.na(latitude))
 
-# get australian outline
-#aus <- readShapeSpatial("data/gis/australia/SHAPEFILE.shp", CRS("+proj=longlat +datum=WGS84")) %>%
-#  spTransform(aea)
-#ausPoly <- polygonToDataFrame(aus)
-
+# get Australia boundary
 aus <- readOGR("data/gis/australia/SHAPEFILE.shp", layer = "SHAPEFILE") %>%
   spTransform(aea)
 
-# get Myrtle Rust rasters
-mrCurrent <- raster("data/myrtle_rust/raster/PA_Current.gri") %>%
-  projectRaster(crs = aea, method = "ngb")
-
-mrFuture <- raster("data/myrtle_rust/raster/PA_Future.gri") %>%
-  projectRaster(crs = aea, method = "ngb")
-
-# change raster values to NA if 0 (we only want values 1 and NA)
-mrCurrent[mrCurrent == 0] <- NA
-mrFuture[mrFuture == 0] <- NA
+# get Mrytle Rust rasters
+mrCurrent <- raster("output/myrtle_rust/mr_current.tif")
+mrFuture <- raster("output/myrtle_rust/mr_future.tif")
 
 y <- mrCurrent %>%
   as("SpatialPixelsDataFrame") %>%
@@ -57,7 +46,6 @@ for (taxon in taxa[1:20]) {
   
   # compute MCP
   mcp <- mcpPolygon(d@coords)
-  proj4string(mcp) <- aea
 
   # get number of vertices in MCP
   numVertices <- polygonToDataFrame(mcp) %>% unique %>% nrow
