@@ -20,6 +20,7 @@ vignettes/*.pdf
 
 *.zip
 /temp
+/R/obsolete
 /data
 /figs
 /output
