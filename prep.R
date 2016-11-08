@@ -94,6 +94,9 @@ saveRDS(mcp, "output/mcp.rds")
 # get mcp data
 mcp <- readRDS("output/mcp.rds")
 
+# get list of taxa
+taxa <- unique(data$species) %>% sort
+
 # get MR rasters
 mrCurrent <- raster("output/myrtle_rust/mr_current.tif")
 mrFuture <- raster("output/myrtle_rust/mr_future.tif")
@@ -123,12 +126,16 @@ for (taxon in taxa) {
   writeRaster(mcpRast, paste0("output/mcp/", gsub(" ", "_", taxon), ".tif"), overwrite = TRUE)
   
   # compute raster of overlap between MCP and MR; need to first crop MR raster to MCP raster extent
-  mrOverlap <- mrCurrent %>%
+  mrCurrent %>%
     crop(mcpRast) %>%
-    raster::mask(mcpRast, ., maskvalue = NA)
-  
-  # write 
-  writeRaster(mrOverlap, paste0("output/mcp_mr/", gsub(" ", "_", taxon), ".tif"), overwrite = TRUE)
+    raster::mask(mcpRast, ., maskvalue = NA) %>%
+    writeRaster(paste0("output/mcp_mr/current/", gsub(" ", "_", taxon), ".tif"), overwrite = TRUE)
+
+  mrFuture %>%
+    crop(mcpRast) %>%
+    raster::mask(mcpRast, ., maskvalue = NA) %>%
+    writeRaster(paste0("output/mcp_mr/future/", gsub(" ", "_", taxon), ".tif"), overwrite = TRUE)
+
 }
 
 
