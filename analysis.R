@@ -23,22 +23,22 @@ aus <- readOGR("data/gis/australia/SHAPEFILE.shp", layer = "SHAPEFILE") %>%
 mrCurrent <- raster("output/myrtle_rust/mr_current.tif")
 mrFuture <- raster("output/myrtle_rust/mr_future.tif")
 
-#y <- mrCurrent %>%
-#  as("SpatialPixelsDataFrame") %>%
-#  as.data.frame
-
+# compute raster cell area
 cellAreaKm2 <- (mrCurrent %>% res %>% prod) / 1000000
 
+# read MCP data from file
 mcp <- readRDS("output/mcp.rds")
 
 # get list of taxa
 taxa <- unique(data$species) %>% sort
 
+# setup output data frame
 output <- data.frame(matrix(ncol = 4, nrow = length(taxa)))
-colnames(output) <- c("species", "cells_in_eoo", "cells_in_mr", "proportion_mr")
+colnames(output) <- c("species", "cells_in_eoo", "cells_in_mr_current", "cells_in_mr_future")
 
-for (i in 1:length(taxa)) {
+for (i in 1:20) {
   taxon <- taxa[i]
+  
   message(taxon)
   
   # get occurrence data for taxon
@@ -48,82 +48,27 @@ for (i in 1:length(taxa)) {
     SpatialPoints(CRS("+proj=longlat +datum=WGS84")) %>%
     spTransform(aea)
   
-  # compute MCP
-  #mcp <- mcpPolygon(d@coords)
-
-  # get number of vertices in MCP
-  #numVertices <- polygonToDataFrame(mcp) %>% unique %>% nrow
-  
-  # intersect MCP with aus border
-  # can only do intersection if 4 or more vertices in MCP
-  #if (numVertices >= 4) {
-  #  mcpCrop <- gIntersection(mcp, aus)
-  #} else {
-  #  mcpCrop <- mcp
-  #}
-  
-  # create data frame of cropped MCP vertices
-  #mcpDF <- polygonToDataFrame(mcpCrop)
-  
-  # convert cropped MCP to raster, using MR raster as template (same extent and resolution)
-  #mcpRast <- rasterize(mcpCrop, mrCurrent)
-  
-  # get intersection between two rasters
-  #out <- raster::mask(mcpRast, mrCurrent, maskvalue = NA)
-  
+  # get EOO cropped MCP
   mcpRast <- raster(paste0("output/mcp/", gsub(" ", "_", taxon), ".tif"))
   
-  out <- raster(paste0("output/mcp_mr/", gsub(" ", "_", taxon), ".tif"))
-  
-  # get number of cells in MCP; can simply add all cell values as they are 1
-  numCellsInRange <- sum(mcpRast[], na.rm = TRUE)  
-  
-  # get number of cells overlapping Myrtle Rust area
-  numCellsInMR <- sum(out[], na.rm = TRUE)
-  
-  # get proportion of range in Myrtle Rust area
-  proportionMR <- numCellsInMR / numCellsInRange 
-  
+  # get rasters of intersection of MCP and MR (for both current and future)
+  mcpMrCurrent <- raster(paste0("output/mcp_mr/current/", gsub(" ", "_", taxon), ".tif"))
+  mcpMrFuture <- raster(paste0("output/mcp_mr/future/", gsub(" ", "_", taxon), ".tif"))
+
+  # write results to output data frame
   output[i, "species"] <- taxon
-  output[i, "cells_in_eoo"] <- numCellsInRange
-  output[i, "cells_in_mr"] <- numCellsInMR
-  output[i, "proportion_mr"] <- proportionMR
-  
-  #p <- ggplot() +
-  #  geom_polygon(data = aus, aes(x = long, y = lat, group = group), fill = NA, colour = "grey") +
-  #  geom_tile(data = y, aes(x = x, y = y, fill = layer), colour = "lightgoldenrod2")
-  
-  #if (length(out[out == 1]) > 0) {
-  #  z <- out %>%
-  #    as("SpatialPixelsDataFrame") %>%
-  #    as.data.frame  
-  #  
-  #  p <- p + geom_tile(data = z, aes(x = x, y = y, fill = layer), colour = "tomato")
-  #}
-  
-  #p <- p +
-  #  geom_polygon(data = mcpCrop, aes(x = long, y = lat, group = group), fill = NA, colour = "springgreen4") +
-  #  xlab("") +
-  #  ylab("") +
-  #  ggtitle(paste0(taxon, " [", round(proportionMR, 4), "]")) +
-  #  guides(fill = FALSE) +
-  #  theme_bw() +
-  #  coord_equal() +
-  #  theme(plot.title = element_text(face = "bold", size = 14, margin = margin(0, 0, 30, 0)),
-  #        strip.background = element_blank(),
-  #        strip.text = element_text(face = "bold", size = 14),
-  #        panel.grid = element_blank(),  ## remove grid lines
-  #        axis.text = element_blank(),  ## remove y-axis label text
-  #        axis.ticks = element_blank(),  ## remove y-axis tick marks
-  #        panel.border = element_blank())
+  # get number of cells in EOO MCP; can simply add all cell values as they are 1
+  output[i, "cells_in_eoo"] <- sum(mcpRast[], na.rm = TRUE)
 
-  #p
+  # get number of cells overlapping Myrtle Rust area; both current and future
+  output[i, "cells_in_mr_current"] <- sum(mcpMrCurrent[], na.rm = TRUE)
+  output[i, "cells_in_mr_future"] <- sum(mcpMrFuture[], na.rm = TRUE)
 
-  #ggsave(filename = paste0("figs/range_mr_maps/", gsub(" ", "_", taxon), ".jpg"), width = 8.01, height = 5.82)
-  
-  # plot EOO maps of range
-  #plotTaxonEOO(d, ausPoly, mcpCrop, zoomToOccurrences = TRUE)
-  #ggsave(filename = paste0("~/Work/katie_myrt/figs/range_maps/", gsub(" ", "_", taxon), ".jpg"), width = 8.01, height = 5.82)
 }
+
+# calculate proportion of MR cells in EOO
+output <- output %>%
+  mutate(proportion_of_mr_current = cells_in_mr_current / cells_in_eoo,
+         proportion_of_mr_future = cells_in_mr_future / cells_in_eoo)
 
 write.csv(output, "output/mr_proportion.csv", row.names = FALSE)
