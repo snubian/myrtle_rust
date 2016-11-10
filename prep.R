@@ -137,6 +137,3 @@ for (taxon in taxa) {
     writeRaster(paste0("output/mcp_mr/future/", gsub(" ", "_", taxon), ".tif"), overwrite = TRUE)
 
 }
-
-
-

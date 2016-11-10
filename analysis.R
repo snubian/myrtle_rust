@@ -36,7 +36,7 @@ taxa <- unique(data$species) %>% sort
 output <- data.frame(matrix(ncol = 4, nrow = length(taxa)))
 colnames(output) <- c("species", "cells_in_eoo", "cells_in_mr_current", "cells_in_mr_future")
 
-for (i in 1:20) {
+for (i in 1:length(taxa)) {
   taxon <- taxa[i]
   
   message(taxon)
