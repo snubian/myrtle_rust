@@ -1,12 +1,49 @@
+plotTaxonMR <- function(d, outline, mcp, y) {
+  
+  mcpDF <- polygonToDataFrame(mcp)  
+  
+  p <- ggplot() +
+    geom_polygon(data = outline, aes(x = long, y = lat, group = group), fill = NA, colour = "grey") +
+    geom_tile(data = y, aes(x = x, y = y, fill = mr_current), colour = "lightgoldenrod2")
+  
+  #if (length(out[out == 1]) > 0) {
+  #  z <- out %>%
+  #    as("SpatialPixelsDataFrame") %>%
+  #    as.data.frame  
+  #  
+  #  p <- p + geom_tile(data = z, aes(x = x, y = y, fill = layer), colour = "tomato")
+  #}
+  
+  p <- p +
+    geom_polygon(data = mcpDF, aes(x = longitude, y = latitude, group = id), fill = NA, colour = "springgreen4") +
+    xlab("") +
+    ylab("") +
+    #ggtitle(paste0(taxon, " [", round(proportionMR, 4), "]")) +
+    guides(fill = FALSE) +
+    theme_bw() +
+    coord_equal() +
+    theme(plot.title = element_text(face = "bold", size = 14, margin = margin(0, 0, 30, 0)),
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold", size = 14),
+          panel.grid = element_blank(),  ## remove grid lines
+          axis.text = element_blank(),  ## remove y-axis label text
+          axis.ticks = element_blank(),  ## remove y-axis tick marks
+          panel.border = element_blank())
+  p
+  
+}
+
+
+
 plotTaxonEOO <- function(d, outline, mcp, zoomToOccurrences = TRUE) {
   
-  xlimits <- c(min(d$longitude), max(d$longitude))
-  ylimits <- c(min(d$latitude), max(d$latitude))
+  xlimits <- c(min(d$longitude)*1.01, max(d$longitude)*0.99)
+  ylimits <- c(min(d$latitude)*1.01, max(d$latitude)*0.99)
   
   mcpDF <- polygonToDataFrame(mcp)
   
   p <- ggplot() +
-    geom_path(data = outline, aes(x = longitude, y = latitude, group = id), colour = "antiquewhite") +
+    geom_path(data = outline, aes(x = long, y = lat, group = group), colour = "antiquewhite") +
     geom_point(data = d, aes(x = longitude, y = latitude), size = 2, alpha = 0.3, colour = "red") +
     geom_polygon(data = mcpDF, aes(x = longitude, y = latitude, group = id), colour = "steelblue1", fill = "steelblue4", alpha = 0.05) +    
     xlab("") +
